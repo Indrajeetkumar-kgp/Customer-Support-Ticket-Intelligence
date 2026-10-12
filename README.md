@@ -117,11 +117,37 @@ The baseline and transformer training commands create a duplicate-aware, stratif
 
 ## Demo
 
-The demo should accept a message and display:
+The demo accepts a message and displays:
 
 - Predicted intent and confidence.
 - The top-k similar training examples and their similarity scores.
 - A short note that the dataset is synthetic and predictions need human review.
+
+### Illustrative prediction
+
+The following shows the format only. The intent, confidence, similarity scores, and retrieved examples must come from an actual model run; this is not a measured result.
+
+```text
+Customer message: I need help cancelling an order.
+Predicted intent: [model prediction]
+Confidence: [model confidence]
+
+Similar training messages:
+1. [retrieved message] — [known intent] — similarity [score]
+2. [retrieved message] — [known intent] — similarity [score]
+3. [retrieved message] — [known intent] — similarity [score]
+```
+
+### Files produced
+
+After running the project commands, the `artifacts/` directory contains:
+
+- `baseline/model.joblib` and `baseline/split_info.json` from baseline training.
+- `transformer/model/` and `transformer/metadata.json` from fine-tuning.
+- `retrieval/embeddings.npy`, `retrieval/examples.csv`, and the embedding model name from index creation.
+- `evaluation/*_metrics.json`, `evaluation/*_confusion_matrix.csv`, and `evaluation/*_predictions.csv` from evaluation.
+
+These generated files are gitignored; the README and source code are the reproducible project deliverables.
 
 ## Reproducibility and responsible use
 
@@ -133,7 +159,12 @@ The demo should accept a message and display:
 
 ## Results
 
-Add a brief summary here after completing the experiments. Evaluation reports are written under `artifacts/evaluation/`:
+Add a brief summary here after completing the experiments. Evaluation reports are written under `artifacts/evaluation/`. A good report compares the transformer with the baseline on the same held-out split, highlights class-level errors, and describes retrieval quality. Do not assume the transformer wins or report a target score before running the experiment.
+
+| Model | Accuracy | Macro-F1 | Weighted-F1 |
+|---|---:|---:|---:|
+| TF-IDF + logistic regression | TBD | TBD | TBD |
+| Fine-tuned DistilBERT | TBD | TBD | TBD |
 
 - Best model and test metrics: **TBD**
 - Improvement over baseline: **TBD**

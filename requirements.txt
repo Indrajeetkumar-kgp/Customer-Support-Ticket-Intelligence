@@ -1,0 +1,10 @@
+datasets>=3.0
+accelerate>=0.34
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+sentence-transformers>=3.0
+streamlit>=1.38
+torch>=2.4
+transformers>=4.46,<5
+

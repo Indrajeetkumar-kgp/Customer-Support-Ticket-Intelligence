@@ -101,6 +101,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+The transformer training script is configured to run on CPU by default: it uses the full training split, two epochs, batch size 8, and a maximum length of 64 tokens. It dynamically pads each batch to that batch's longest message, reducing unnecessary computation for short tickets. Training detects CUDA automatically if available; no GPU is required. CPU fine-tuning can still take substantially longer than GPU training, depending on your processor.
+
 Load the dataset from Hugging Face in your data preparation code, or follow the dataset card's current instructions. Keep downloaded data and trained model artifacts out of version control unless there is a clear reason to include them.
 
 Run the project commands from the repository root:
@@ -112,6 +114,14 @@ python -m src.retrieval
 python -m src.evaluate
 streamlit run app.py
 ```
+
+To tune CPU use, lower the batch size or epochs if memory or time is limited, or adjust the thread count to match your processor:
+
+```bash
+python -m src.train_transformer --epochs 1 --batch-size 4 --cpu-threads 2
+```
+
+For a stronger final run, keep all training examples and try 3 epochs if your CPU can handle the extra time. Compare runs on the same fixed test split, and choose based on validation macro-F1 and held-out test metrics rather than training loss alone.
 
 The baseline and transformer training commands create a duplicate-aware, stratified split targeting 70/15/15 of the unique normalized messages. Exact normalized duplicates are assigned to the same split to reduce leakage, so row percentages may differ. Both training scripts use seed `42` by default; pass `--seed` to all commands if you change it. Evaluation expects both trained models by default; use `python -m src.evaluate --model baseline` or `--model transformer` to evaluate one.
 

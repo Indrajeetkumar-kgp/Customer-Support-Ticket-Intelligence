@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,7 @@ from torch.utils.data import Dataset
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    DataCollatorWithPadding,
     Trainer,
     TrainingArguments,
 )
@@ -23,9 +25,9 @@ DEFAULT_MODEL = "distilbert-base-uncased"
 
 
 class TicketDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, max_length: int = 128):
+    def __init__(self, texts, labels, tokenizer, max_length: int = 64):
         self.encodings = tokenizer(
-            texts.tolist(), truncation=True, padding="max_length", max_length=max_length
+            texts.tolist(), truncation=True, padding=False, max_length=max_length
         )
         self.labels = labels.to_numpy(dtype=np.int64)
 
@@ -33,8 +35,8 @@ class TicketDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, index):
-        item = {key: torch.tensor(value[index]) for key, value in self.encodings.items()}
-        item["labels"] = torch.tensor(self.labels[index], dtype=torch.long)
+        item = {key: value[index] for key, value in self.encodings.items()}
+        item["labels"] = int(self.labels[index])
         return item
 
 
@@ -43,10 +45,16 @@ def main() -> None:
     parser.add_argument("--csv", help="Optional path to a downloaded dataset CSV")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--max-length", type=int, default=128)
+    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--max-length", type=int, default=64)
+    parser.add_argument("--cpu-threads", type=int, default=min(4, os.cpu_count() or 1))
     args = parser.parse_args()
+
+    if args.cpu_threads < 1:
+        parser.error("--cpu-threads must be at least 1")
+    if not torch.cuda.is_available():
+        torch.set_num_threads(args.cpu_threads)
 
     frame = load_support_data(args.csv)
     train, validation, test = make_splits(frame, seed=args.seed)
@@ -69,6 +77,7 @@ def main() -> None:
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
+        dataloader_num_workers=0,
         learning_rate=2e-5,
         weight_decay=0.01,
         eval_strategy="epoch",
@@ -93,6 +102,7 @@ def main() -> None:
         train_dataset=train_set,
         eval_dataset=validation_set,
         processing_class=tokenizer,
+        data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
     )
     trainer.train()
@@ -104,6 +114,7 @@ def main() -> None:
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "max_length": args.max_length,
+        "cpu_threads": args.cpu_threads,
         "labels": labels,
         "split_rows": {"train": len(train), "validation": len(validation), "test": len(test)},
     }

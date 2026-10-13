@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding
 
 from src.data import LABEL_COLUMN, TEXT_COLUMN, load_support_data, make_splits
 from src.metrics import classification_metrics
@@ -28,12 +28,16 @@ def evaluate_baseline(test: pd.DataFrame, output: Path) -> None:
 
 def evaluate_transformer(test: pd.DataFrame, output: Path) -> None:
     model_dir = Path("artifacts/transformer/model")
+    metadata_path = Path("artifacts/transformer/metadata.json")
+    max_length = json.loads(metadata_path.read_text(encoding="utf-8")).get("max_length", 64)
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
     model.eval()
     labels = test[LABEL_COLUMN].tolist()
-    dataset = TicketDataset(test[TEXT_COLUMN], pd.Series([0] * len(test)), tokenizer)
-    loader = DataLoader(dataset, batch_size=32)
+    dataset = TicketDataset(test[TEXT_COLUMN], pd.Series([0] * len(test)), tokenizer, max_length)
+    loader = DataLoader(
+        dataset, batch_size=8, collate_fn=DataCollatorWithPadding(tokenizer=tokenizer)
+    )
     predicted_ids = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)

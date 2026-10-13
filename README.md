@@ -2,6 +2,8 @@
 
 A portfolio project that uses deep learning and transformer models to help support teams route customer messages and find relevant past cases.
 
+[**Open the ready-to-run Google Colab notebook**](https://colab.research.google.com/github/Indrajeetkumar-kgp/Customer-Support-Ticket-Intelligence/blob/main/notebooks/colab_training.ipynb) — select a GPU runtime in Colab, then run the notebook from top to bottom to train and evaluate the project.
+
 ## Project goals
 
 Given a support message, the system will:
